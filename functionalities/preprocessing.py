@@ -74,7 +74,7 @@ def get_species_distribution_fwf(selected_pointclouds, selected_fwf_pointclouds)
                 species_list.append(species)
     return species_list
 
-def get_species_dependent_pointcloud_pairs_fwf(species_to_use, selected_pointclouds, selected_fwf_pointclouds, pc_size):
+def get_species_dependent_pointcloud_pairs_fwf(species_to_use, selected_pointclouds, selected_fwf_pointclouds, pc_size, capsel):
     species_pairs = []
     for pointcloud in selected_pointclouds:
         filename = os.path.split(pointcloud)[1]
@@ -96,21 +96,24 @@ def get_species_dependent_pointcloud_pairs_fwf(species_to_use, selected_pointclo
         else:
             if os.path.isfile(pointcloud):
                 os.remove(pointcloud)
-    new_species_pairs = []
-    for pair in species_pairs:
-        print(pair[0])
-        las_file = lp.read(pair[0])
-        las_points = np.vstack((las_file.x, las_file.y, las_file.z)).transpose()
-        if len(las_points) < pc_size:
-            if os.path.isfile(pair[0]):
-                os.remove(pair[0])
-            if os.path.isfile(pair[1]):
-                os.remove(pair[1])
-        else:
-            new_species_pairs.append(pair)
+    if capsel == "ALS" or capsel == "ALL":
+        pass
+    else:
+        new_species_pairs = []
+        for pair in species_pairs:
+            print(pair[0])
+            las_file = lp.read(pair[0])
+            las_points = np.vstack((las_file.x, las_file.y, las_file.z)).transpose()
+            if len(las_points) < pc_size:
+                if os.path.isfile(pair[0]):
+                    os.remove(pair[0])
+                if os.path.isfile(pair[1]):
+                    os.remove(pair[1])
+            else:
+                new_species_pairs.append(pair)
     return new_species_pairs
 
-def get_species_dependent_pointclouds(species_to_use, selected_pointclouds, pc_size):
+def get_species_dependent_pointclouds(species_to_use, selected_pointclouds, pc_size, capsel):
     species_clouds = []
     for pointcloud in selected_pointclouds:
         filename = os.path.split(pointcloud)[1]
@@ -118,11 +121,14 @@ def get_species_dependent_pointclouds(species_to_use, selected_pointclouds, pc_s
         if species in species_to_use:
             las_file = lp.read(pointcloud)
             las_points = np.vstack((las_file.x, las_file.y, las_file.z)).transpose()
-            if len(las_points) < pc_size:
-                if os.path.isfile(pointcloud):
-                    os.remove(pointcloud)
+            if capsel == "ALS" or capsel == "ALL":
+                pass
             else:
-                species_clouds.append(pointcloud)
+                if len(las_points) < pc_size:
+                    if os.path.isfile(pointcloud):
+                        os.remove(pointcloud)
+                else:
+                    species_clouds.append(pointcloud)
         else:
             if os.path.isfile(pointcloud):
                 os.remove(pointcloud)
@@ -354,21 +360,21 @@ def augment_species_pointclouds(species_pcs, max_representation, species_distrib
             savepath_pc = os.path.join(pc_path_selection + "/" + new_filename_pc)
             save_point_cloud(savepath_pc, pc, outFile_p)
 
-def augment_selection_fwf(pointclouds, fwf_pointclouds, elimination_percentage, max_pc_scale, pc_path_selection, fwf_path_selection, pc_size):
+def augment_selection_fwf(pointclouds, fwf_pointclouds, elimination_percentage, max_pc_scale, pc_path_selection, fwf_path_selection, pc_size, capsel):
     if check_if_data_is_augmented_already(pointclouds) == False:
         species_list = get_species_distribution_fwf(pointclouds, fwf_pointclouds)
         species_to_use, species_distribution = eliminate_underrepresented_species(species_list, elimination_percentage)
-        species_pc_pairs = get_species_dependent_pointcloud_pairs_fwf(species_to_use, pointclouds, fwf_pointclouds, pc_size)
+        species_pc_pairs = get_species_dependent_pointcloud_pairs_fwf(species_to_use, pointclouds, fwf_pointclouds, pc_size, capsel)
         max_representation = get_maximum_distribution(species_distribution)
         augment_species_pointclouds_fwf(species_pc_pairs, max_representation, species_distribution, max_pc_scale, pc_path_selection, fwf_path_selection)
     else:
         logging.info("Augmented data found, loading!")
 
-def augment_selection(pointclouds, elimination_percentage, max_pc_scale, pc_path_selection, pc_size):
+def augment_selection(pointclouds, elimination_percentage, max_pc_scale, pc_path_selection, pc_size, capsel):
     if check_if_data_is_augmented_already(pointclouds) == False:
         species_list = get_species_distribution(pointclouds)
         species_to_use, species_distribution = eliminate_underrepresented_species(species_list, elimination_percentage)
-        species_pointclouds = get_species_dependent_pointclouds(species_to_use, pointclouds, pc_size)
+        species_pointclouds = get_species_dependent_pointclouds(species_to_use, pointclouds, pc_size, capsel)
         max_representation = get_maximum_distribution(species_distribution)
         augment_species_pointclouds(species_pointclouds, max_representation, species_distribution, max_pc_scale, pc_path_selection)
     else:

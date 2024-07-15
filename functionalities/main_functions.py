@@ -24,7 +24,7 @@ def preprocess_data(full_pathlist, ssstest, capsel, growsel, elimper, maxpcscale
     if fwf_av == True:
         unaugmented_regular_pointclouds = preprocessing.select_pointclouds(full_pathlist[6])
         unaugmented_fwf_pointclouds = preprocessing.select_pointclouds(full_pathlist[7])
-        preprocessing.augment_selection_fwf(unaugmented_regular_pointclouds, unaugmented_fwf_pointclouds, elimper, maxpcscale, full_pathlist[6], full_pathlist[7], netpcsize)
+        preprocessing.augment_selection_fwf(unaugmented_regular_pointclouds, unaugmented_fwf_pointclouds, elimper, maxpcscale, full_pathlist[6], full_pathlist[7], netpcsize, capsel)
         preprocessing.generate_colored_images(netimgsize, full_pathlist[6], full_pathlist[8])
         selected_pointclouds_augmented, selected_fwf_pointclouds_augmented, selected_images_augmented = preprocessing.get_user_specified_data_fwf(full_pathlist[6], full_pathlist[7], full_pathlist[8], capsel, growsel)
         filtered_pointclouds, filtered_fwf_pointclouds, filtered_images = preprocessing.filter_data_for_selection_fwf(selected_pointclouds_augmented, selected_fwf_pointclouds_augmented, selected_images_augmented, elimper)
@@ -41,7 +41,7 @@ def preprocess_data(full_pathlist, ssstest, capsel, growsel, elimper, maxpcscale
         return X_pc_train, X_pc_val, X_metrics_train, X_metrics_val, X_img_1_train, X_img_1_val, X_img_2_train, X_img_2_val, y_train, y_val, num_classes, label_dict
     else:
         unaugmented_regular_pointclouds = preprocessing.select_pointclouds(full_pathlist[4])
-        preprocessing.augment_selection(unaugmented_regular_pointclouds, elimper, maxpcscale, full_pathlist[4], netpcsize)
+        preprocessing.augment_selection(unaugmented_regular_pointclouds, elimper, maxpcscale, full_pathlist[4], netpcsize, capsel)
         preprocessing.generate_colored_images(netimgsize, full_pathlist[4], full_pathlist[5])
         selected_pointclouds_augmented, selected_images_augmented = preprocessing.get_user_specified_data(full_pathlist[4], full_pathlist[5], capsel, growsel)
         filtered_pointclouds, filtered_images = preprocessing.filter_data_for_selection(selected_pointclouds_augmented, selected_images_augmented, elimper)
@@ -90,7 +90,7 @@ def perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_met
         max_trials=num_hp_trials,
         max_retries_per_trial=3,
         max_consecutive_failed_trials=3,
-        directory=dir_name,
+        directory='hp-tuning_ULS_LEAF-ON_20240713-233054',
         project_name='tree_classification'
     )
     reduce_lr = ReduceLROnPlateau(monitor='val_accuracy', factor=0.985, patience=5, min_lr=1e-7)
@@ -111,6 +111,7 @@ def perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_met
     return untrained_model
 
 def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, modeldir, label_dict, capsel, growsel):
+    y_pred_val = y_val
     tf.keras.utils.set_random_seed(812)
     model.compile(
         optimizer=tf.keras.optimizers.Adam(learning_rate=7.5e-6),
@@ -135,7 +136,7 @@ def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_met
     val_gen = model_utils.DataGenerator(X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, bsz)
     train_gen.on_epoch_end()
     val_gen.on_epoch_end()
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=7, restore_best_weights=True)
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=7, restore_best_weights=True)
     reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_accuracy', factor=0.985, patience=3, min_lr=2e-7)
     degrade_lr = tf.keras.callbacks.LearningRateScheduler(model_utils.scheduler)
     macro_f1_callback = model_utils.MacroF1ScoreCallback(validation_data=val_gen, batch_size=bsz)
@@ -161,8 +162,9 @@ def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_met
         pass
     predictions = model.predict([X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val], batch_size=16, verbose=1)
     y_pred_real = model_utils.map_onehot_to_real(predictions, label_dict)
-    y_true_real = model_utils.map_onehot_to_real(y_val, label_dict)
-    model_utils.plot_conf_matrix(y_true_real, y_pred_real, modeldir, model_file_path)
+    y_true_real = model_utils.map_onehot_to_real(y_pred_val, label_dict)
+    model_utils.plot_conf_matrix(y_true_real, y_pred_real, modeldir, plot_path, label_dict)
+    model_utils.plot_best_epoch_metrics(history, plot_path)
     model.summary()
     model_path = model_utils.get_trained_model_folder(modeldir, capsel, growsel)
     model_loaded_test = model_utils.load_trained_model_from_folder(model_path)

@@ -24,6 +24,7 @@ import open3d as o3d
 from scipy.spatial import KDTree
 import time
 from functionalities import workspace_setup
+import pandas as pd
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 from keras import mixed_precision
@@ -75,7 +76,6 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel):
     plots_dir = os.path.join(checkpoint_dir, plot_path)
     if not os.path.exists(plots_dir):
         os.makedirs(plots_dir)
-    
     # Plot training & validation loss values
     plt.figure()
     plt.plot(history.history['loss'])
@@ -86,7 +86,6 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel):
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_loss.png"))
     plt.close()
-    
     # Plot training & validation accuracy values
     plt.figure()
     plt.plot(history.history['accuracy'])
@@ -97,7 +96,6 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel):
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_accuracy.png"))
     plt.close()
-
     # Plot training & validation precision values
     plt.figure()
     plt.plot(history.history['precision'])
@@ -108,7 +106,6 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel):
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_precision.png"))
     plt.close()
-
     # Plot training & validation recall values
     plt.figure()
     plt.plot(history.history['recall'])
@@ -119,7 +116,6 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel):
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_recall.png"))
     plt.close()
-
     # Plot training & validation AUC values
     plt.figure()
     plt.plot(history.history['pr_curve'])
@@ -130,7 +126,6 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel):
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_aucpr.png"))
     plt.close()
-
     # Plot training & validation AUC values
     plt.figure()
     plt.plot(history.history['pr_at_rec'])
@@ -141,7 +136,6 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel):
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_pr_at_rec.png"))
     plt.close()
-
     # Plot training & validation AUC values
     plt.figure()
     plt.plot(history.history['rec_at_pr'])
@@ -152,17 +146,43 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel):
     plt.legend(['Train', 'Validation'], loc='upper left')
     plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_rec_at_pr.png"))
     plt.close()
+    return plots_dir
 
-def plot_conf_matrix(true_labels, predicted_labels, modeldir, model_file_path):
-    y_pred = np.argmax(predicted_labels, axis=1)
-    y_true = np.argmax(true_labels, axis=1)
-    conf_matrix = confusion_matrix(y_true, y_pred)
+def plot_conf_matrix(true_labels, predicted_labels, modeldir, plot_path, label_dict):
+    min_length = min(len(true_labels), len(predicted_labels))
+    true_labels = true_labels[:min_length]
+    predicted_labels = predicted_labels[:min_length]
+    logging.debug("Length of true_labels: %d, Length of predicted_labels: %d", len(true_labels), len(predicted_labels))
+    # Get the unique labels from the true labels
+    unique_labels = sorted(set(true_labels) | set(predicted_labels))
+    # Create the confusion matrix
+    conf_matrix = confusion_matrix(true_labels, predicted_labels, labels=unique_labels)
+    # Plot the confusion matrix
     plt.figure(figsize=(10, 8))
-    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='Blues', cbar=False)
+    sns.heatmap(conf_matrix, annot=True, fmt='d', cmap='magma', cbar=False, xticklabels=unique_labels, yticklabels=unique_labels)
     plt.xlabel('Predicted Labels')
     plt.ylabel('True Labels')
     plt.title('Confusion Matrix')
-    plt.savefig(os.path.join(modeldir, model_file_path + '_conf_matrix_predictions_all_data.png'))
+    plt.savefig(os.path.join(plot_path, 'conf_matrix_predictions_all_data.png'))
+    plt.close()
+
+def plot_best_epoch_metrics(history, modeldir):
+    # Extract the epoch with the best validation accuracy
+    best_epoch = np.argmax(history.history['val_accuracy'])
+    # Extract metrics for the best epoch
+    best_metrics = {metric: values[best_epoch] for metric, values in history.history.items()}
+    # Convert the metrics to a DataFrame
+    metrics_df = pd.DataFrame(best_metrics, index=[best_epoch])
+    # Plot the metrics as a table
+    fig, ax = plt.subplots(figsize=(12, 6))
+    ax.axis('tight')
+    ax.axis('off')
+    table = ax.table(cellText=metrics_df.values, colLabels=metrics_df.columns, rowLabels=['Best Epoch'], cellLoc='center', loc='center')
+    table.auto_set_font_size(False)
+    table.set_fontsize(12)
+    table.auto_set_column_width(col=list(range(len(metrics_df.columns))))
+    # Save the table as an image
+    plt.savefig(os.path.join(modeldir, 'best_epoch_metrics.png'))
     plt.close()
 
 def get_class_distribution(one_hot_labels):
@@ -182,9 +202,18 @@ def get_class_distribution(one_hot_labels):
     return class_distribution
 
 def map_onehot_to_real(onehot_lbls, onehot_to_text_dict):
-    class_indices = np.argmax(onehot_lbls, axis=1)
-    text_labels = [onehot_to_text_dict[idx] for idx in class_indices]
-    return np.array(text_labels)
+    if onehot_lbls.ndim == 1:
+        # Predictions are already class labels
+        predicted_classes = onehot_lbls
+        text_labels = [onehot_to_text_dict[idx] for idx in predicted_classes]
+        return np.array(text_labels)
+    elif onehot_lbls.ndim == 2:
+        # Predictions are probabilities for each class
+        predicted_classes = np.argmax(onehot_lbls, axis=1)
+        text_labels = [onehot_to_text_dict[idx] for idx in predicted_classes]
+        return np.array(text_labels)
+    else:
+        raise ValueError("Unexpected prediction shape: {}".format(onehot_lbls.shape))
 
 def check_data(X_train, X_img_1, X_img_2, X_metrics, y_train):
     assert not np.isnan(X_train).any(), "Training pointclouds contain NaN values"
@@ -266,7 +295,11 @@ class PointCloudExtractor(tf.keras.layers.Layer):
         hp_dropout_rate = self.hp.Float('pvgcn_dropout_rate', min_value=0.2, max_value=0.6, step=0.05)
         hp_regularizer_value = self.hp.Float('pvgcn_regularization', min_value=0.003, max_value=0.01, step=0.001)
         mlp_first = self.hp.Int('pvgcn_mlp_first', min_value=16, max_value=256, step=16)
-        self.transform = TNetLess(input_shape[-1], self.hp, name="t_net")
+        input_shape = input_shape.as_list()
+        units_tnetless = input_shape[-1]
+        if isinstance(units_tnetless, tf.Tensor):
+            units_tnetless = units_tnetless.numpy()
+        self.transform = TNetLess(units_tnetless, self.hp, name="t_net")
         self.conv1 = Conv1D(mlp_first, 1, name="pvgcn_conv1d_1")
         self.bnorm1 = BatchNormalization(name="pvgcn_bnorm_1")
         self.relu1 = ReLU(name="pvgcn_relu_1")
@@ -277,7 +310,7 @@ class PointCloudExtractor(tf.keras.layers.Layer):
         self.dropout2 = Dropout(hp_dropout_rate, name="pvgcn_dropout_2")
         self.maxp1 = GlobalMaxPooling1D(name="pvgcn_maxp_1")
         self.bnorm3 = BatchNormalization(name="pvgcn_bnorm_3")
-        self.dense1 = Dense(input_shape[-1], name="pvgcn_dense_1")
+        self.dense1 = Dense(units_tnetless, name="pvgcn_dense_1")
         self.concat1 = Concatenate(axis=1, name="pvgcn_concat_1")
         self.conv3 = Conv1D(hp_units, hp_kernel_size, padding='same', kernel_regularizer=L1L2(l1=hp_regularizer_value, l2=hp_regularizer_value), name="pvgcn_conv1d_3")
         self.bnorm4 = BatchNormalization(name="pvgcn_bnorm_4")
