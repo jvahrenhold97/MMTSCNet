@@ -90,7 +90,7 @@ def perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_met
         max_trials=num_hp_trials,
         max_retries_per_trial=3,
         max_consecutive_failed_trials=3,
-        directory='hp-tuning_ULS_LEAF-ON_20240713-233054',
+        directory=dir_name,
         project_name='tree_classification'
     )
     reduce_lr = ReduceLROnPlateau(monitor='val_accuracy', factor=0.985, patience=5, min_lr=1e-7)
