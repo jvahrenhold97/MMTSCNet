@@ -61,7 +61,7 @@ Create a new folder in your working folder called "source_data" and paste your s
 Your data itself should follow the structure proposed by the [dataset](https://doi.pangaea.de/10.1594/PANGAEA.942856) to initially train and test the model on, separating properties in filenames with "_".<br>
 <br>
 
-**DISCLAIMER:** Full-waveform data is fully optional. It can enhance the models classification accuracy but is not recommended and the software will automatically detect FWF data if it is present.<br>
+**DISCLAIMER:** Full-waveform data is fully optional. It can enhance the models classification accuracy but is not required and the software will automatically detect FWF data if it is present.<br>
 <br>
 
 ```bash
