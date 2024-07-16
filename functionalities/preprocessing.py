@@ -97,7 +97,7 @@ def get_species_dependent_pointcloud_pairs_fwf(species_to_use, selected_pointclo
             if os.path.isfile(pointcloud):
                 os.remove(pointcloud)
     if capsel == "ALS" or capsel == "ALL":
-        pass
+        return species_pairs
     else:
         new_species_pairs = []
         for pair in species_pairs:
@@ -111,7 +111,7 @@ def get_species_dependent_pointcloud_pairs_fwf(species_to_use, selected_pointclo
                     os.remove(pair[1])
             else:
                 new_species_pairs.append(pair)
-    return new_species_pairs
+        return new_species_pairs
 
 def get_species_dependent_pointclouds(species_to_use, selected_pointclouds, pc_size, capsel):
     species_clouds = []
