@@ -35,7 +35,7 @@ def run_mmtscnet():
             untrained_model = main_functions.perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, bsize, pc_size, img_size, num_classes, cap_sel, grow_sel)
 
             logging.info("Training MMTSCNet...")
-            trained_model = main_functions.perform_training(untrained_model, bsize, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, model_dir, label_dict, cap_sel, grow_sel)
+            trained_model = main_functions.perform_training(untrained_model, bsize, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, model_dir, label_dict, cap_sel, grow_sel, pc_size)
 
             logging.info("Training finished, you can now predict for %s_%s data. User --prediction to create a new prediction!", cap_sel, grow_sel)
 
@@ -54,7 +54,7 @@ def run_mmtscnet():
                 pretrained_model = model_utils.load_trained_model_from_folder(pretrained_model_path)
 
                 logging.info("Predicting for custom dataset...")
-                main_functions.predict_for_custom_data(pretrained_model, work_dir, img_size, pc_size, cap_sel, grow_sel, elim_per, fwf_av, data_dir, model_dir)
+                main_functions.predict_for_custom_data(pretrained_model, work_dir, img_size, pc_size, cap_sel, grow_sel, elim_per, fwf_av, data_dir, model_dir, pc_size)
 
             else:
                 logging.error("No pretrained model available, exiting!")

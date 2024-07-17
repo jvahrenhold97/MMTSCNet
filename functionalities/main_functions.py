@@ -83,7 +83,7 @@ def perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_met
     train_gen.on_epoch_end()
     val_gen.on_epoch_end()
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    dir_name = f'hp-tuning_{capsel}_{growsel}_{timestamp}'
+    dir_name = f'hp-tuning_{capsel}_{growsel}_{netpcsize}_{timestamp}'
     tuner = BayesianOptimization(
         model_utils.CombinedModel(point_cloud_shape, image_shape, metrics_shape, num_classes, netpcsize),
         objective=Objective("val_custom_metric", direction="max"),
@@ -110,7 +110,7 @@ def perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_met
     gc.collect()
     return untrained_model
 
-def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, modeldir, label_dict, capsel, growsel):
+def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, modeldir, label_dict, capsel, growsel, netpcsize):
     y_pred_val = y_val
     tf.keras.utils.set_random_seed(812)
     model.compile(
@@ -136,7 +136,7 @@ def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_met
     val_gen = model_utils.DataGenerator(X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, bsz)
     train_gen.on_epoch_end()
     val_gen.on_epoch_end()
-    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=15, restore_best_weights=True)
+    early_stopping = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=6, restore_best_weights=True)
     reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(monitor='val_accuracy', factor=0.985, patience=3, min_lr=2e-7)
     degrade_lr = tf.keras.callbacks.LearningRateScheduler(model_utils.scheduler)
     macro_f1_callback = model_utils.MacroF1ScoreCallback(validation_data=val_gen, batch_size=bsz)
@@ -151,9 +151,9 @@ def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_met
         callbacks=[early_stopping, reduce_lr, degrade_lr, macro_f1_callback, custom_scoring_callback],
         verbose=1
     )
-    plot_path = model_utils.plot_and_save_history(history, modeldir, capsel, growsel)
+    plot_path = model_utils.plot_and_save_history(history, modeldir, capsel, growsel, netpcsize)
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    model_file_path = f'MMTSCNET_{capsel}_{growsel}_{timestamp}_TRAINED'
+    model_file_path = f'trained_{capsel}_{growsel}_{netpcsize}_{timestamp}'
     if os.path.exists(model_file_path):
         os.remove(model_file_path)
     try:
@@ -163,7 +163,7 @@ def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_met
     predictions = model.predict([X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val], batch_size=16, verbose=1)
     y_pred_real = model_utils.map_onehot_to_real(predictions, label_dict)
     y_true_real = model_utils.map_onehot_to_real(y_pred_val, label_dict)
-    model_utils.plot_conf_matrix(y_true_real, y_pred_real, modeldir, plot_path, label_dict)
+    model_utils.plot_conf_matrix(y_true_real, y_pred_real, modeldir, plot_path, label_dict, capsel, growsel, netpcsize)
     model_utils.plot_best_epoch_metrics(history, plot_path)
     model.summary()
     model_path = model_utils.get_trained_model_folder(modeldir, capsel, growsel)
@@ -190,7 +190,7 @@ def predict_for_custom_data(pretrained_model, work_dir, netimgsize, netpcsize, c
         logging.info("Generating prediction data...")
         X_pc, X_metrics, X_img_1, X_img_2, onehot_to_label_dict = preprocessing.generate_prediction_data(capsel, growsel, filtered_pointclouds, resampled_pointclouds, combined_metrics_all, images_front, images_side, full_pathlist[9], 0.005)
         logging.info("Predicting for dataset...")
-        model_utils.predict_for_data(pretrained_model, X_pc, X_metrics, X_img_1, X_img_2, onehot_to_label_dict, filtered_pointclouds, full_pathlist[1], model_dir, capsel, growsel)
+        model_utils.predict_for_data(pretrained_model, X_pc, X_metrics, X_img_1, X_img_2, onehot_to_label_dict, filtered_pointclouds, full_pathlist[1], model_dir, capsel, growsel, netpcsize)
     else:
         logging.info("Extracting data...")
         full_pathlist = workspace_setup.extract_data_for_predictions(data_dir, work_dir, fwf_av, capsel, growsel)
@@ -209,5 +209,5 @@ def predict_for_custom_data(pretrained_model, work_dir, netimgsize, netpcsize, c
         logging.info("Generating prediction data...")
         X_pc, X_metrics, X_img_1, X_img_2, onehot_to_label_dict = preprocessing.generate_prediction_data(capsel, growsel, filtered_pointclouds, resampled_pointclouds, combined_metrics_all, images_front, images_side, full_pathlist[6], 0.005)
         logging.info("Predicting for dataset...")
-        model_utils.predict_for_data(pretrained_model, X_pc, X_metrics, X_img_1, X_img_2, onehot_to_label_dict, filtered_pointclouds, full_pathlist[1], model_dir, capsel, growsel)
+        model_utils.predict_for_data(pretrained_model, X_pc, X_metrics, X_img_1, X_img_2, onehot_to_label_dict, filtered_pointclouds, full_pathlist[1], model_dir, capsel, growsel, netpcsize)
         
