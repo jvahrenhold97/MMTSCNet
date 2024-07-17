@@ -72,7 +72,7 @@ def check_label_corruption(one_hot_labels):
 
 def plot_and_save_history(history, checkpoint_dir, capsel, growsel, netpcsize):
     # Create a directory for plots if it doesn't exist
-    plot_path = os.path.join(capsel + "_" + growsel + "_" + netpcsize + "_plots")
+    plot_path = os.path.join("plots_" + capsel + "_" + growsel + "_" + netpcsize)
     plots_dir = os.path.join(checkpoint_dir, plot_path)
     if not os.path.exists(plots_dir):
         os.makedirs(plots_dir)
