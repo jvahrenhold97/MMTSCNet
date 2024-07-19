@@ -70,9 +70,12 @@ def check_label_corruption(one_hot_labels):
     # No corruption found
     return False
 
-def plot_and_save_history(history, checkpoint_dir, capsel, growsel, netpcsize):
+def plot_and_save_history(history, checkpoint_dir, capsel, growsel, netpcsize, fwf_av):
     # Create a directory for plots if it doesn't exist
-    plot_path = os.path.join("plots_" + capsel + "_" + growsel + "_" + netpcsize)
+    if fwf_av == True:
+        plot_path = os.path.join("plots_fwf_" + capsel + "_" + growsel + "_" + str(netpcsize))
+    else:
+        plot_path = os.path.join("plots_" + capsel + "_" + growsel + "_" + str(netpcsize))
     plots_dir = os.path.join(checkpoint_dir, plot_path)
     if not os.path.exists(plots_dir):
         os.makedirs(plots_dir)
@@ -84,7 +87,7 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel, netpcsize):
     plt.ylabel('Loss')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + netpcsize + "_loss.png"))
+    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + str(netpcsize) + "_loss.png"))
     plt.close()
     # Plot training & validation accuracy values
     plt.figure()
@@ -94,7 +97,7 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel, netpcsize):
     plt.ylabel('Accuracy')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + netpcsize + "_accuracy.png"))
+    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + str(netpcsize) + "_accuracy.png"))
     plt.close()
     # Plot training & validation precision values
     plt.figure()
@@ -104,7 +107,7 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel, netpcsize):
     plt.ylabel('Precision')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + netpcsize + "_precision.png"))
+    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + str(netpcsize) + "_precision.png"))
     plt.close()
     # Plot training & validation recall values
     plt.figure()
@@ -114,7 +117,7 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel, netpcsize):
     plt.ylabel('Recall')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + netpcsize + "_recall.png"))
+    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + str(netpcsize) + "_recall.png"))
     plt.close()
     # Plot training & validation AUC values
     plt.figure()
@@ -124,7 +127,7 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel, netpcsize):
     plt.ylabel('Area under PR-Curve')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + netpcsize + "_aucpr.png"))
+    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + str(netpcsize) + "_aucpr.png"))
     plt.close()
     # Plot training & validation AUC values
     plt.figure()
@@ -134,7 +137,7 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel, netpcsize):
     plt.ylabel('Precision at Recall')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + netpcsize + "_pr_at_rec.png"))
+    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + str(netpcsize) + "_pr_at_rec.png"))
     plt.close()
     # Plot training & validation AUC values
     plt.figure()
@@ -144,7 +147,7 @@ def plot_and_save_history(history, checkpoint_dir, capsel, growsel, netpcsize):
     plt.ylabel('Recall at Precision')
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper left')
-    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + netpcsize + "_rec_at_pr.png"))
+    plt.savefig(os.path.join(plots_dir + "/" + str(capsel) + "_" + growsel + "_" + str(netpcsize) + "_rec_at_pr.png"))
     plt.close()
     return plots_dir
 
@@ -163,7 +166,7 @@ def plot_conf_matrix(true_labels, predicted_labels, modeldir, plot_path, label_d
     plt.xlabel('Predicted Labels')
     plt.ylabel('True Labels')
     plt.title('Confusion Matrix')
-    plt.savefig(os.path.join(plot_path, f'conf-matrix_{capsel}_{growsel}_{netpcsize}.png'))
+    plt.savefig(os.path.join(plot_path, f'conf-matrix_{capsel}_{growsel}_{str(netpcsize)}.png'))
     plt.close()
 
 def plot_best_epoch_metrics(history, modeldir):
@@ -174,7 +177,7 @@ def plot_best_epoch_metrics(history, modeldir):
     # Convert the metrics to a DataFrame
     metrics_df = pd.DataFrame(best_metrics, index=[best_epoch])
     # Plot the metrics as a table
-    fig, ax = plt.subplots(figsize=(24, 12))
+    fig, ax = plt.subplots(figsize=(30, 10))
     ax.axis('tight')
     ax.axis('off')
     table = ax.table(cellText=metrics_df.values, colLabels=metrics_df.columns, rowLabels=['Best Epoch'], cellLoc='center', loc='center')
@@ -650,7 +653,7 @@ def get_tuned_model_folder(modeldir, capsel, growsel):
         elif "trained" in file:
             pass
         elif capsel in file and growsel in file:
-            date = file.split("_")[3]
+            date = file.split("_")[4]
             filetime = datetime.datetime.strptime(date, "%Y%m%d-%H%M%S")
             if most_recent_time is None or filetime > most_recent_time:
                 most_recent_file = file
@@ -665,7 +668,7 @@ def get_trained_model_folder(modeldir, capsel, growsel):
         if file.lower().endswith(".tf") or file.lower().endswith(".keras") or file.lower().endswith(".h5"):
             pass
         elif "trained" in file and capsel in file and growsel in file:
-            date = file.split("_")[3].split(".")[0]
+            date = file.split("_")[4].split(".")[0]
             filetime = datetime.datetime.strptime(date, "%Y%m%d-%H%M%S")
             if most_recent_time is None or filetime > most_recent_time:
                 most_recent_file = file

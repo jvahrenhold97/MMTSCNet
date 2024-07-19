@@ -113,7 +113,7 @@ def unzip_all_datasets(SOURCE_DATASET_PATH, pathlist, fwf_av):
         if is_dataset_extracted==False:
             base_data_folders = get_las_and_fwf_base_dir_paths(SOURCE_DATASET_PATH)
             for data_folder_path in base_data_folders:
-                if data_folder_path.split("/")[1] == "las":
+                if data_folder_path.split("/")[1] == "LAS":
                     for file in os.listdir(data_folder_path):
                         logging.info("Extracting files for plot %s", file)
                         if "zip" in file:
@@ -123,7 +123,7 @@ def unzip_all_datasets(SOURCE_DATASET_PATH, pathlist, fwf_av):
                             os.mkdir(DATASET_PATH)
                             with zipfile.ZipFile(FILE_PATH, "r") as zip:
                                 zip.extractall(DATASET_PATH)
-                elif data_folder_path.split("/")[1] == "fwf":
+                elif data_folder_path.split("/")[1] == "FWF":
                     for file in os.listdir(data_folder_path):
                         logging.info("Extracting files for plot %s", file)
                         if "zip" in file:
@@ -508,20 +508,28 @@ def copy_files_for_prediction(las_unzipped_path, las_working_path, capsel, grows
         plot_name = plot_folder
         for subfolder in os.listdir(plot_path):
             if subfolder == "single_trees":
+                print("Single trees folder found!")
                 id_counter += 1
                 subfolder_path = os.path.join(plot_path, subfolder)
-                for file in os.listdir(subfolder_path):
-                    if file.lower().endswith(".las") or file.lower().endswith(".laz"):
-                        cap1, cap2, cap3, grow1, grow2 = get_capgrow(capsel, growsel)
-                        if cap1 in file or cap2 in file or cap3 in file:
-                            if grow1 in file or grow2 in file:
-                                species = file.split("_")[0]
-                                retrieval = file.split("_")[3]
-                                method = file.split("_")[5].split("-")[0]
-                                filepath = os.path.join(subfolder_path, file)
-                                las_working_path_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_" + growsel + "_" + str(plot_name) + ".laz")
-                                shutil.copy2(filepath, las_working_path_pc)
-                                tree_index += 1
+                print(subfolder_path)
+                for folder in os.listdir(subfolder_path):
+                    folder_path = os.path.join(subfolder_path, folder)
+                    for file in os.listdir(folder_path):
+                        if file.lower().endswith(".las") or file.lower().endswith(".laz"):
+                            print(f"Las file {file} found!")
+                            cap1, cap2, cap3, grow1, grow2 = get_capgrow(capsel, growsel)
+                            print(cap1,cap2,cap3,grow1,grow2)
+                            if cap1 in file or cap2 in file or cap3 in file:
+                                print("Cap1, Cap2 or Cap3 in file!")
+                                if grow1 in file or grow2 in file:
+                                    print("grow1 or grow2 in file!")
+                                    species = file.split("_")[0]
+                                    retrieval = file.split("_")[3]
+                                    method = file.split("_")[5].split("-")[0]
+                                    filepath = os.path.join(folder_path, file)
+                                    las_working_path_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_" + growsel + "_" + str(plot_name) + ".laz")
+                                    shutil.copy2(filepath, las_working_path_pc)
+                                    tree_index += 1
 
 def extract_data_for_predictions(data_dir, work_dir, fwf_av, capsel, growsel):
     local_pathlist = create_working_directory(work_dir, fwf_av)

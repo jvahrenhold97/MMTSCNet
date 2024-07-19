@@ -7,6 +7,7 @@ import gc
 import time
 from keras_tuner import BayesianOptimization, Objective
 from keras.callbacks import ReduceLROnPlateau, LearningRateScheduler
+from keras import backend as K
 
 def extract_data(data_dir, work_dir, fwf_av, capsel, growsel):
     local_pathlist = workspace_setup.create_working_directory(work_dir, fwf_av)
@@ -18,6 +19,7 @@ def extract_data(data_dir, work_dir, fwf_av, capsel, growsel):
         return full_pathlist
     else:
         full_pathlist = workspace_setup.create_config_directory(local_pathlist, capsel, growsel, fwf_av)
+        workspace_setup.copy_files_for_prediction(full_pathlist[1], full_pathlist[4], capsel, growsel)
         return full_pathlist
 
 def preprocess_data(full_pathlist, ssstest, capsel, growsel, elimper, maxpcscale, netpcsize, netimgsize, fwf_av):
@@ -57,7 +59,7 @@ def preprocess_data(full_pathlist, ssstest, capsel, growsel, elimper, maxpcscale
         X_pc_train, X_pc_val, X_metrics_train, X_metrics_val, X_img_1_train, X_img_1_val, X_img_2_train, X_img_2_val, y_train, y_val, num_classes, label_dict = preprocessing.generate_training_data(capsel, growsel, filtered_pointclouds, resampled_pointclouds, combined_metrics_all, images_front, images_side, ssstest, full_pathlist[6], 0.003)
         return X_pc_train, X_pc_val, X_metrics_train, X_metrics_val, X_img_1_train, X_img_1_val, X_img_2_train, X_img_2_val, y_train, y_val, num_classes, label_dict
     
-def perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, bsize, netpcsize, netimgsize, num_classes, capsel, growsel):
+def perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, bsize, netpcsize, netimgsize, num_classes, capsel, growsel, fwf_av):
     point_cloud_shape = (netpcsize, 3)
     image_shape = (netimgsize, netimgsize, 3)
     metrics_shape = (X_metrics_train.shape[1],)
@@ -83,7 +85,10 @@ def perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_met
     train_gen.on_epoch_end()
     val_gen.on_epoch_end()
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    dir_name = f'hp-tuning_{capsel}_{growsel}_{netpcsize}_{timestamp}'
+    if fwf_av == True:
+        dir_name = f'hp-tuning-fwf_{capsel}_{growsel}_{netpcsize}_{timestamp}'
+    else:
+        dir_name = f'hp-tuning_{capsel}_{growsel}_{netpcsize}_{timestamp}'
     tuner = BayesianOptimization(
         model_utils.CombinedModel(point_cloud_shape, image_shape, metrics_shape, num_classes, netpcsize),
         objective=Objective("val_custom_metric", direction="max"),
@@ -108,9 +113,10 @@ def perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_met
     untrained_model = combined_model.get_untrained_model(best_hyperparameters)
     untrained_model.summary()
     gc.collect()
+    K.clear_session()
     return untrained_model
 
-def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, modeldir, label_dict, capsel, growsel, netpcsize):
+def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, modeldir, label_dict, capsel, growsel, netpcsize, fwf_av):
     y_pred_val = y_val
     tf.keras.utils.set_random_seed(812)
     model.compile(
@@ -151,16 +157,20 @@ def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_met
         callbacks=[early_stopping, reduce_lr, degrade_lr, macro_f1_callback, custom_scoring_callback],
         verbose=1
     )
-    plot_path = model_utils.plot_and_save_history(history, modeldir, capsel, growsel, netpcsize)
+    plot_path = model_utils.plot_and_save_history(history, modeldir, capsel, growsel, netpcsize, fwf_av)
     timestamp = time.strftime("%Y%m%d-%H%M%S")
-    model_file_path = f'trained_{capsel}_{growsel}_{netpcsize}_{timestamp}'
+    if fwf_av == True:
+        model_file_path = f'trained-fwf_{capsel}_{growsel}_{str(netpcsize)}_{timestamp}'
+    else:
+        model_file_path = f'trained_{capsel}_{growsel}_{str(netpcsize)}_{timestamp}'
     if os.path.exists(model_file_path):
         os.remove(model_file_path)
     try:
         model.save(model_file_path, save_format="keras")
     except:
         pass
-    predictions = model.predict([X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val], batch_size=16, verbose=1)
+    K.clear_session()
+    predictions = model.predict([X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val], batch_size=8, verbose=1)
     y_pred_real = model_utils.map_onehot_to_real(predictions, label_dict)
     y_true_real = model_utils.map_onehot_to_real(y_pred_val, label_dict)
     model_utils.plot_conf_matrix(y_true_real, y_pred_real, modeldir, plot_path, label_dict, capsel, growsel, netpcsize)
@@ -169,6 +179,7 @@ def perform_training(model, bsz, X_pc_train, X_img_1_train, X_img_2_train, X_met
     model_path = model_utils.get_trained_model_folder(modeldir, capsel, growsel)
     model_loaded_test = model_utils.load_trained_model_from_folder(model_path)
     gc.collect()
+    K.clear_session()
     return model_loaded_test
 
 def predict_for_custom_data(pretrained_model, work_dir, netimgsize, netpcsize, capsel, growsel, elimper, fwf_av, data_dir, model_dir):

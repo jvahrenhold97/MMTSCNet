@@ -32,10 +32,10 @@ def run_mmtscnet():
             X_pc_train, X_pc_val, X_metrics_train, X_metrics_val, X_img_1_train, X_img_1_val, X_img_2_train, X_img_2_val, y_train, y_val, num_classes, label_dict = main_functions.preprocess_data(workspace_paths, sss_test, cap_sel, grow_sel, elim_per, max_pcscale, pc_size, img_size, fwf_av)
 
             logging.info("Commencing hyperparameter-tuning...")
-            untrained_model = main_functions.perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, bsize, pc_size, img_size, num_classes, cap_sel, grow_sel)
+            untrained_model = main_functions.perform_hp_tuning(model_dir, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, bsize, pc_size, img_size, num_classes, cap_sel, grow_sel, fwf_av)
 
             logging.info("Training MMTSCNet...")
-            trained_model = main_functions.perform_training(untrained_model, bsize, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, model_dir, label_dict, cap_sel, grow_sel, pc_size)
+            trained_model = main_functions.perform_training(untrained_model, bsize, X_pc_train, X_img_1_train, X_img_2_train, X_metrics_train, y_train, X_pc_val, X_img_1_val, X_img_2_val, X_metrics_val, y_val, model_dir, label_dict, cap_sel, grow_sel, pc_size, fwf_av)
 
             logging.info("Training finished, you can now predict for %s_%s data. User --prediction to create a new prediction!", cap_sel, grow_sel)
 
@@ -50,7 +50,7 @@ def run_mmtscnet():
         try:
             logging.info("Loading pretrained model...")
             if main_utils.check_if_model_is_created(model_dir) == True:
-                pretrained_model_path = model_utils.get_trained_model_folder(model_dir, cap_sel, grow_sel)
+                pretrained_model_path = model_utils.get_trained_model_folder(model_dir, cap_sel, grow_sel, fwf_av)
                 pretrained_model = model_utils.load_trained_model_from_folder(pretrained_model_path)
 
                 logging.info("Predicting for custom dataset...")
