@@ -298,6 +298,37 @@ def augment_species_pointclouds_fwf(species_pc_pairs, max_representation, specie
             else:
                 logging.debug("FWF data has been lost!")
 
+def augment_species_pointclouds(species_pcs, max_representation, species_distribution, max_scale, pc_path_selection):
+    pc_index = 0
+    for pointcloud in species_pcs:
+        current_species = get_species_for_pointcloud(pointcloud)
+        current_species_amount = get_abs_num(current_species, species_distribution)
+        upscale_fac = get_upscale_factor(current_species_amount, max_representation)
+        pc_filepath = os.path.dirname(pointcloud)
+        pc_name_full = os.path.split(pointcloud)[1]
+        pc_name_extension = pc_name_full.split(".")[-1]
+        pc_name_f = pc_name_full.split(".")[0]
+        pc_name_parts = pc_name_f.split("_")[:-1]
+        filename_pc = pc_name_parts[0] + "_" + pc_name_parts[1] + "_" + pc_name_parts[2] + "_" + pc_name_parts[3] + "_" + pc_name_parts[4] + "_" + pc_name_parts[5] + "_" + pc_name_parts[6] 
+        pc_points, pc = load_point_cloud_and_file(pointcloud)
+        for i in range(0, int(upscale_fac)*4):
+            pc_index+=1
+            outFile_p = lp.LasData(pc.header)
+            outFile_p.vlrs = pc.vlrs
+            angle = pick_random_angle()
+            exported_points_pc = pc_points
+            rotated_pc = rotate_point_cloud(exported_points_pc, angle)
+            scale_factors = np.random.uniform(1 - max_scale, 1 + max_scale, size=3)
+            scaled_rotated_pc = scale_point_cloud(rotated_pc, scale_factors)
+            adjust_las_header(outFile_p, scaled_rotated_pc)
+            outFile_p.x = scaled_rotated_pc[:, 0]
+            outFile_p.y = scaled_rotated_pc[:, 1]
+            outFile_p.z = scaled_rotated_pc[:, 2]
+            new_filename_pc = filename_pc + "_" + "aug0" + str(pc_index) + str(i) + "." + pc_name_extension
+            logging.info("Created point cloud %s!", new_filename_pc)
+            savepath_pc = os.path.join(pc_path_selection + "/" + new_filename_pc)
+            save_point_cloud(savepath_pc, pc, outFile_p)
+
 def save_point_cloud(file_path, orig_las_file, outFile):
     if orig_las_file.evlrs:
         outFile.evlrs = orig_las_file.evlrs.copy()
@@ -329,36 +360,6 @@ def scale_point_cloud(point_cloud, scale_factors):
     # Manually apply scaling factors to each axis
     scaled_point_cloud = point_cloud * scale_factors
     return scaled_point_cloud
-
-def augment_species_pointclouds(species_pcs, max_representation, species_distribution, max_scale, pc_path_selection):
-    pc_index = 0
-    for pointcloud in species_pcs:
-        current_species = get_species_for_pointcloud(pointcloud)
-        current_species_amount = get_abs_num(current_species, species_distribution)
-        upscale_fac = get_upscale_factor(current_species_amount, max_representation)
-        pc_filepath = os.path.dirname(pointcloud)
-        pc_name_full = os.path.split(pointcloud)[1]
-        pc_name_extension = pc_name_full.split(".")[-1]
-        pc_name_f = pc_name_full.split(".")[0]
-        pc_name_parts = pc_name_f.split("_")[:-1]
-        filename_pc = pc_name_parts[0] + "_" + pc_name_parts[1] + "_" + pc_name_parts[2] + "_" + pc_name_parts[3] + "_" + pc_name_parts[4] + "_" + pc_name_parts[5] + "_" + pc_name_parts[6] 
-        pc_points, pc = load_point_cloud_and_file(pointcloud)
-        for i in range(0, int(upscale_fac)*4):
-            pc_index+=1
-            outFile_p = lp.LasData(pc.header)
-            outFile_p.vlrs = pc.vlrs
-            angle = pick_random_angle()
-            exported_points_pc = pc_points
-            rotated_pc = rotate_point_cloud(exported_points_pc, angle)
-            scale_factors = np.random.uniform(1 - max_scale, 1 + max_scale, size=3)
-            scaled_rotated_pc = scale_point_cloud(rotated_pc, scale_factors)
-            outFile_p.x = scaled_rotated_pc[:, 0]
-            outFile_p.y = scaled_rotated_pc[:, 1]
-            outFile_p.z = scaled_rotated_pc[:, 2]
-            new_filename_pc = filename_pc + "_" + "aug0" + str(pc_index) + str(i) + "." + pc_name_extension
-            logging.info("Created point cloud %s!", new_filename_pc)
-            savepath_pc = os.path.join(pc_path_selection + "/" + new_filename_pc)
-            save_point_cloud(savepath_pc, pc, outFile_p)
 
 def augment_selection_fwf(pointclouds, fwf_pointclouds, elimination_percentage, max_pc_scale, pc_path_selection, fwf_path_selection, pc_size, capsel):
     if check_if_data_is_augmented_already(pointclouds) == False:

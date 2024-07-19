@@ -363,16 +363,16 @@ def extract_single_trees_from_fpc(fpc_unzipped_path, las_unzipped_path, las_work
                                                     retrieval = single_tree_pc.split("_")[3]
                                                     method = single_tree_pc.split("_")[5].split(".")[0].split("-")[0]
                                                     if "on" in single_tree_pc:
-                                                        output_path_fwf_pc = os.path.join(fwf_working_path + "/" + str(tree_index) + "_FWF_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_LEAF-ON_aug00.laz")
-                                                        output_path_las_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_LEAF-ON_aug00.laz")
+                                                        output_path_fwf_pc = os.path.join(fwf_working_path + "/" + str(tree_index) + "_FWF_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_" + growsel + "_aug00.laz")
+                                                        output_path_las_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_" + growsel + "_aug00.laz")
                                                         outFile.write(output_path_fwf_pc)
                                                         shutil.copy2(single_tree_pc_path, output_path_las_pc)
                                                         logging.info("Extracted tree #%s for plot %s with point format %s", id_counter, plot, outFile.header.point_format)
                                                         id_counter+=1
                                                         logging.debug("Does file contain fwf data? - %s", contains_full_waveform_data(output_path_fwf_pc))
                                                     else:
-                                                        output_path_fwf_pc = os.path.join(fwf_working_path + "/" + str(tree_index) + "_FWF_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_LEAF-OFF_aug00.laz")
-                                                        output_path_las_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_LEAF-OFF_aug00.laz")
+                                                        output_path_fwf_pc = os.path.join(fwf_working_path + "/" + str(tree_index) + "_FWF_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_" + growsel + "_aug00.laz")
+                                                        output_path_las_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_" + growsel + "_aug00.laz")
                                                         outFile.write(output_path_fwf_pc)
                                                         shutil.copy2(single_tree_pc_path, output_path_las_pc)
                                                         logging.info("Extracted tree #%s for plot %s with point format %s", id_counter, plot, outFile.header.point_format)
@@ -501,35 +501,32 @@ def create_config_directory_for_predictions(local_pathlist, capsel, growsel, fwf
         return local_pathlist
     
 def copy_files_for_prediction(las_unzipped_path, las_working_path, capsel, growsel):
-    tree_index = 0
-    id_counter = 0
-    for plot_folder in os.listdir(las_unzipped_path):
-        plot_path = os.path.join(las_unzipped_path, plot_folder)
-        plot_name = plot_folder
-        for subfolder in os.listdir(plot_path):
-            if subfolder == "single_trees":
-                print("Single trees folder found!")
-                id_counter += 1
-                subfolder_path = os.path.join(plot_path, subfolder)
-                print(subfolder_path)
-                for folder in os.listdir(subfolder_path):
-                    folder_path = os.path.join(subfolder_path, folder)
-                    for file in os.listdir(folder_path):
-                        if file.lower().endswith(".las") or file.lower().endswith(".laz"):
-                            print(f"Las file {file} found!")
-                            cap1, cap2, cap3, grow1, grow2 = get_capgrow(capsel, growsel)
-                            print(cap1,cap2,cap3,grow1,grow2)
-                            if cap1 in file or cap2 in file or cap3 in file:
-                                print("Cap1, Cap2 or Cap3 in file!")
-                                if grow1 in file or grow2 in file:
-                                    print("grow1 or grow2 in file!")
-                                    species = file.split("_")[0]
-                                    retrieval = file.split("_")[3]
-                                    method = file.split("_")[5].split("-")[0]
-                                    filepath = os.path.join(folder_path, file)
-                                    las_working_path_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_" + growsel + "_" + str(plot_name) + ".laz")
-                                    shutil.copy2(filepath, las_working_path_pc)
-                                    tree_index += 1
+    if get_are_fwf_pcs_extracted(las_working_path) == False:
+        tree_index = 0
+        id_counter = 0
+        for plot_folder in os.listdir(las_unzipped_path):
+            plot_path = os.path.join(las_unzipped_path, plot_folder)
+            plot_name = plot_folder
+            for subfolder in os.listdir(plot_path):
+                if subfolder == "single_trees":
+                    id_counter += 1
+                    subfolder_path = os.path.join(plot_path, subfolder)
+                    for folder in os.listdir(subfolder_path):
+                        folder_path = os.path.join(subfolder_path, folder)
+                        for file in os.listdir(folder_path):
+                            if file.lower().endswith(".las") or file.lower().endswith(".laz"):
+                                cap1, cap2, cap3, grow1, grow2 = get_capgrow(capsel, growsel)
+                                if cap1 in file or cap2 in file or cap3 in file:
+                                    if grow1 in file or grow2 in file:
+                                        species = file.split("_")[0]
+                                        retrieval = file.split("_")[3]
+                                        method = file.split("_")[5].split("-")[0]
+                                        filepath = os.path.join(folder_path, file)
+                                        las_working_path_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_" + growsel + "_" + "_aug00.laz")
+                                        shutil.copy2(filepath, las_working_path_pc)
+                                        tree_index += 1
+    else:
+        logging.info("Files have been extracted already, skipping!")
 
 def extract_data_for_predictions(data_dir, work_dir, fwf_av, capsel, growsel):
     local_pathlist = create_working_directory(work_dir, fwf_av)
