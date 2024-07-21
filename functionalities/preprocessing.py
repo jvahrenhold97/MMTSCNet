@@ -17,6 +17,7 @@ from utils import main_utils
 import logging
 from random import uniform
 from functionalities import workspace_setup
+import time
 
 def select_pointclouds(pointcloud_folder):
     pointclouds = []
@@ -101,7 +102,6 @@ def get_species_dependent_pointcloud_pairs_fwf(species_to_use, selected_pointclo
     else:
         new_species_pairs = []
         for pair in species_pairs:
-            print(pair[0])
             las_file = lp.read(pair[0])
             las_points = np.vstack((las_file.x, las_file.y, las_file.z)).transpose()
             if len(las_points) < pc_size:
@@ -121,14 +121,11 @@ def get_species_dependent_pointclouds(species_to_use, selected_pointclouds, pc_s
         if species in species_to_use:
             las_file = lp.read(pointcloud)
             las_points = np.vstack((las_file.x, las_file.y, las_file.z)).transpose()
-            if capsel == "ALS" or capsel == "ALL":
-                pass
+            if len(las_points) < pc_size:
+                if os.path.isfile(pointcloud):
+                    os.remove(pointcloud)
             else:
-                if len(las_points) < pc_size:
-                    if os.path.isfile(pointcloud):
-                        os.remove(pointcloud)
-                else:
-                    species_clouds.append(pointcloud)
+                species_clouds.append(pointcloud)
         else:
             if os.path.isfile(pointcloud):
                 os.remove(pointcloud)

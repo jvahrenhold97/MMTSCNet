@@ -522,7 +522,12 @@ def copy_files_for_prediction(las_unzipped_path, las_working_path, capsel, grows
                                         retrieval = file.split("_")[3]
                                         method = file.split("_")[5].split("-")[0]
                                         filepath = os.path.join(folder_path, file)
-                                        las_working_path_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_" + growsel + "_" + "_aug00.laz")
+                                        if "on" in file:
+                                            las_working_path_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_LEAF-ON_aug00.laz")
+                                        elif "off" in file:
+                                            las_working_path_pc = os.path.join(las_working_path + "/" + str(tree_index) + "_REG_" + species + "_" + method + "_" + retrieval + "_" + str(id_counter) + "_LEAF-OFF_aug00.laz")
+                                        else:
+                                            pass
                                         shutil.copy2(filepath, las_working_path_pc)
                                         tree_index += 1
     else:

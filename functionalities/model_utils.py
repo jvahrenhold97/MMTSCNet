@@ -54,19 +54,13 @@ def check_label_corruption(one_hot_labels):
     """
     # Check for NaN values
     if np.isnan(one_hot_labels).any():
-        print("One-hot encoded labels contain NaN values.")
         return True
-
     # Check if each label vector has exactly one element set to 1
     if not np.all(np.sum(one_hot_labels, axis=1) == 1):
-        print("One-hot encoded labels are not properly encoded (more than one element set to 1).")
         return True
-
     # Check if any label vector has all elements set to 0
     if not np.all(np.any(one_hot_labels, axis=1)):
-        print("One-hot encoded labels are not properly encoded (no element set to 1).")
         return True
-
     # No corruption found
     return False
 
