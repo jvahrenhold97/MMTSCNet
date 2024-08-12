@@ -421,7 +421,7 @@ def create_voxel_grid_from_las(pointcloud):
     pcd_las_o3d.points = o3d.utility.Vector3dVector(points)
     R = pcd_las_o3d.get_rotation_matrix_from_xyz((-1.5, 0, 0))
     pcd_las_o3d.rotate(R, center=(0, 0, 0))
-    vox_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(pcd_las_o3d, voxel_size=0.03)
+    vox_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(pcd_las_o3d, voxel_size=0.001)
     return vox_grid
 
 def get_voxel_positions(voxel_grid):
