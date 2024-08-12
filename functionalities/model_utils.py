@@ -322,7 +322,7 @@ class PointCloudExtractor(tf.keras.layers.Layer):
             dropout = Dropout(hp_dropout_rate, name="mmtsc_dropout_" + str(i+3))
             self.conv_blocks.append((conv, bnorm, relu, dropout))
         self.maxp2 = GlobalMaxPooling1D(name="mmtsc_maxp_2")
-        self.bnorm_globf = BatchNormalization(name="mmtsc_bnorm_globf")
+        self.bnorm_globf = BatchNormalization(name="mmtsc_bnorm_glob")
 
     def call(self, inputs):
         transform = self.transform(inputs)
