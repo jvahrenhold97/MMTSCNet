@@ -1,5 +1,5 @@
 import tensorflow as tf
-from keras.layers import Input, Conv1D, BatchNormalization, GlobalMaxPooling1D, Dense, Dropout, Concatenate, Reshape, ReLU
+from keras.layers import Input, Conv1D, BatchNormalization, GlobalMaxPooling1D, Dense, Dropout, Concatenate, Reshape, ReLU, Flatten
 from keras.models import Model
 from keras.regularizers import L1L2
 from keras.applications import DenseNet121
@@ -287,50 +287,50 @@ class PointCloudExtractor(tf.keras.layers.Layer):
 
     def build(self, input_shape):
         num_conv1d = self.hp.Choice('pce_depth', [1, 2, 3, 4])
-        hp_kernel_size = self.hp.Choice('pvgcn_kernel_size', values=[1, 3])
-        hp_units = self.hp.Choice('pvgcn_units', values=[256, 512, 1024])
-        hp_dropout_rate = self.hp.Float('pvgcn_dropout_rate', min_value=0.2, max_value=0.6, step=0.05)
-        hp_regularizer_value = self.hp.Float('pvgcn_regularization', min_value=0.003, max_value=0.01, step=0.001)
-        mlp_first = self.hp.Int('pvgcn_mlp_first', min_value=16, max_value=256, step=16)
+        hp_kernel_size = self.hp.Choice('mmtsc_kernel_size', values=[1, 3])
+        hp_units = self.hp.Choice('mmtsc_units', values=[256, 512, 1024])
+        hp_dropout_rate = self.hp.Float('mmtsc_dropout_rate', min_value=0.2, max_value=0.6, step=0.05)
+        hp_regularizer_value = self.hp.Float('mmtsc_regularization', min_value=0.003, max_value=0.01, step=0.001)
+        mlp_first = self.hp.Int('mmtsc_mlp_first', min_value=16, max_value=256, step=16)
         input_shape = input_shape.as_list()
         units_tnetless = input_shape[-1]
         if isinstance(units_tnetless, tf.Tensor):
             units_tnetless = units_tnetless.numpy()
         self.transform = TNetLess(units_tnetless, self.hp, name="t_net")
-        self.conv1 = Conv1D(mlp_first, 1, name="pvgcn_conv1d_1")
-        self.bnorm1 = BatchNormalization(name="pvgcn_bnorm_1")
-        self.relu1 = ReLU(name="pvgcn_relu_1")
-        self.dropout1 = Dropout(hp_dropout_rate, name="pvgcn_dropout_1")
-        self.conv2 = Conv1D(mlp_first*2, 1, name="pvgcn_conv1d_2")
-        self.bnorm2 = BatchNormalization(name="pvgcn_bnorm_2")
-        self.relu2 = ReLU(name="pvgcn_relu_2")
-        self.dropout2 = Dropout(hp_dropout_rate, name="pvgcn_dropout_2")
-        self.maxp1 = GlobalMaxPooling1D(name="pvgcn_maxp_1")
-        self.bnorm3 = BatchNormalization(name="pvgcn_bnorm_3")
-        self.dense1 = Dense(units_tnetless, name="pvgcn_dense_1")
-        self.concat1 = Concatenate(axis=1, name="pvgcn_concat_1")
-        self.conv3 = Conv1D(hp_units, hp_kernel_size, padding='same', kernel_regularizer=L1L2(l1=hp_regularizer_value, l2=hp_regularizer_value), name="pvgcn_conv1d_3")
-        self.bnorm4 = BatchNormalization(name="pvgcn_bnorm_4")
-        self.relu3 = ReLU(name="pvgcn_relu_3")
-        self.dropout3 = Dropout(hp_dropout_rate, name="pvgcn_dropout_3")
+        self.conv1 = Conv1D(mlp_first, 1, name="mmtsc_conv1d_1")
+        self.bnorm1 = BatchNormalization(name="mmtsc_bnorm_1")
+        self.relu1 = ReLU(name="mmtsc_relu_1")
+        self.dropout1 = Dropout(hp_dropout_rate, name="mmtsc_dropout_1")
+        self.conv2 = Conv1D(mlp_first*2, 1, name="mmtsc_conv1d_2")
+        self.bnorm2 = BatchNormalization(name="mmtsc_bnorm_2")
+        self.relu2 = ReLU(name="mmtsc_relu_2")
+        self.dropout2 = Dropout(hp_dropout_rate, name="mmtsc_dropout_2")
+        self.maxp1 = GlobalMaxPooling1D(name="mmtsc_maxp_1")
+        self.bnorm3 = BatchNormalization(name="mmtsc_bnorm_3")
+        self.dense1 = Dense(units_tnetless, name="mmtsc_dense_1")
+        self.concat1 = Concatenate(axis=1, name="mmtsc_concat_1")
+        self.conv3 = Conv1D(hp_units, hp_kernel_size, padding='same', kernel_regularizer=L1L2(l1=hp_regularizer_value, l2=hp_regularizer_value), name="mmtsc_conv1d_3")
+        self.bnorm4 = BatchNormalization(name="mmtsc_bnorm_4")
+        self.relu3 = ReLU(name="mmtsc_relu_3")
+        self.dropout3 = Dropout(hp_dropout_rate, name="mmtsc_dropout_3")
         self.conv_blocks = []
         for i in range(1, num_conv1d + 1):
             filters = hp_units // (i * 2)
-            conv = Conv1D(filters, hp_kernel_size, padding='same', kernel_regularizer=L1L2(l1=hp_regularizer_value, l2=hp_regularizer_value), name="pvgcn_conv1d_" + str(i+3))
-            bnorm = BatchNormalization(name="pvgcn_bnorm_" + str(i+4))
-            relu = ReLU(name="pvgcn_relu_" + str(i+3))
-            dropout = Dropout(hp_dropout_rate, name="pvgcn_dropout_" + str(i+3))
+            conv = Conv1D(filters, hp_kernel_size, padding='same', kernel_regularizer=L1L2(l1=hp_regularizer_value, l2=hp_regularizer_value), name="mmtsc_conv1d_" + str(i+3))
+            bnorm = BatchNormalization(name="mmtsc_bnorm_" + str(i+4))
+            relu = ReLU(name="mmtsc_relu_" + str(i+3))
+            dropout = Dropout(hp_dropout_rate, name="mmtsc_dropout_" + str(i+3))
             self.conv_blocks.append((conv, bnorm, relu, dropout))
-        self.maxp2 = GlobalMaxPooling1D(name="pvgcn_maxp_2")
-        self.bnorm_globf = BatchNormalization(name="pvgcn_bnorm_globf")
+        self.maxp2 = GlobalMaxPooling1D(name="mmtsc_maxp_2")
+        self.bnorm_globf = BatchNormalization(name="mmtsc_bnorm_globf")
 
     def call(self, inputs):
         transform = self.transform(inputs)
         point_cloud_transformed = tf.matmul(inputs, transform)
         batch_size = tf.shape(inputs)[0]
-        indices = tf.random.uniform((batch_size, self.num_points, self.hp.Int('pvgcn_num_neighbors', min_value=8, max_value=64, step=8)), maxval=self.num_points, dtype=tf.int32)
+        indices = tf.random.uniform((batch_size, self.num_points, self.hp.Int('mmtsc_num_neighbors', min_value=8, max_value=64, step=8)), maxval=self.num_points, dtype=tf.int32)
         features = tf.gather(point_cloud_transformed, indices, axis=1, batch_dims=1)
-        features = tf.reshape(features, (batch_size, self.num_points, self.hp.Int('pvgcn_num_neighbors', min_value=8, max_value=64, step=8) * inputs.shape[-1]))
+        features = tf.reshape(features, (batch_size, self.num_points, self.hp.Int('mmtsc_num_neighbors', min_value=8, max_value=64, step=8) * inputs.shape[-1]))
         features = self.conv1(features)
         features = self.bnorm1(features)
         features = self.relu1(features)
