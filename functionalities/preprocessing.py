@@ -262,6 +262,8 @@ def augment_species_pointclouds_fwf(species_pc_pairs, max_representation, specie
         filename_fwf = filenameparts_fwf[0] + "_" + filenameparts_fwf[1] + "_" + filenameparts_fwf[2] + "_" + filenameparts_fwf[3] + "_" + filenameparts_fwf[4] + "_" + filenameparts_fwf[5] + "_" + filenameparts_fwf[6] 
         reg_points, reg_pc = load_point_cloud_and_file(species_pairs[0])
         fwf_points, fwf_pc = load_point_cloud_and_file(species_pairs[1])
+        logging.debug("Number of points reg: %s", len(reg_points))
+        logging.debug("Number of points reg: %s", len(fwf_points))
         for i in range(0, int(upscale_fac)*4):
             pair_index+=1
             outFile_r = lp.LasData(reg_pc.header)
@@ -308,6 +310,7 @@ def augment_species_pointclouds(species_pcs, max_representation, species_distrib
         pc_name_parts = pc_name_f.split("_")[:-1]
         filename_pc = pc_name_parts[0] + "_" + pc_name_parts[1] + "_" + pc_name_parts[2] + "_" + pc_name_parts[3] + "_" + pc_name_parts[4] + "_" + pc_name_parts[5] + "_" + pc_name_parts[6] 
         pc_points, pc = load_point_cloud_and_file(pointcloud)
+        logging.debug("Number of points: %s", len(pc_points))
         for i in range(0, int(upscale_fac)*4):
             pc_index+=1
             outFile_p = lp.LasData(pc.header)
@@ -318,6 +321,7 @@ def augment_species_pointclouds(species_pcs, max_representation, species_distrib
             scale_factors = np.random.uniform(1 - max_scale, 1 + max_scale, size=3)
             scaled_rotated_pc = scale_point_cloud(rotated_pc, scale_factors)
             adjust_las_header(outFile_p, scaled_rotated_pc)
+            logging.debug("Number of points after transformation: %s", len(scaled_rotated_pc))
             outFile_p.x = scaled_rotated_pc[:, 0]
             outFile_p.y = scaled_rotated_pc[:, 1]
             outFile_p.z = scaled_rotated_pc[:, 2]
@@ -421,7 +425,7 @@ def create_voxel_grid_from_las(pointcloud):
     pcd_las_o3d.points = o3d.utility.Vector3dVector(points)
     R = pcd_las_o3d.get_rotation_matrix_from_xyz((-1.5, 0, 0))
     pcd_las_o3d.rotate(R, center=(0, 0, 0))
-    vox_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(pcd_las_o3d, voxel_size=0.001)
+    vox_grid = o3d.geometry.VoxelGrid.create_from_point_cloud(pcd_las_o3d, voxel_size=0.03)
     return vox_grid
 
 def get_voxel_positions(voxel_grid):
@@ -676,7 +680,7 @@ def filter_classes_by_representation(selected_pointclouds, threshold):
     total_samples = len(tree_labels)
     label_counts = Counter(tree_labels)
     class_percentages = {label: count / total_samples * 100 for label, count in label_counts.items()}
-    valid_classes = [label for label, percentage in class_percentages.items() if percentage >= threshold]
+    valid_classes = ["FagSyl", "PicAbi", "PseMen", "QuePet"]#[label for label, percentage in class_percentages.items() if percentage >= threshold]
     filtered_pointclouds = [pc for pc in selected_pointclouds if pc.split("/")[-1].split(".")[0].split("_")[2] in valid_classes]
     return filtered_pointclouds
 
@@ -685,7 +689,7 @@ def filter_images_by_representation(selected_images, threshold):
     total_samples = len(tree_labels)
     label_counts = Counter(tree_labels)
     class_percentages = {label: count / total_samples * 100 for label, count in label_counts.items()}
-    valid_classes = [label for label, percentage in class_percentages.items() if percentage >= threshold]
+    valid_classes = ["FagSyl", "PicAbi", "PseMen", "QuePet"]#[label for label, percentage in class_percentages.items() if percentage >= threshold]
     filtered_images = [im for im in selected_images if im.split("/")[-1].split(".")[0].split("_")[1] in valid_classes]
     return filtered_images
 
