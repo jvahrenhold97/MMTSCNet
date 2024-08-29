@@ -5,6 +5,7 @@ import time
 from utils import main_utils
 from functionalities import main_functions, model_utils
 
+# Check for GPU's and enable them for processing
 gpus = tf.config.list_physical_devices('GPU')
 if gpus:
     for gpu in gpus:
@@ -15,13 +16,18 @@ def run_mmtscnet():
     """
     Executes program to preprocess data aswell as tune and train the classification network.
     """
+    # Parse arguments
     args = main_utils.parse_arguments()
+    # Ste-up logging for outputs
     log_level = logging.DEBUG if args.verbose else logging.INFO
     main_utils.setup_logging(log_level)
     logging.info("Starting MMTSCNET - This may take a while!")
+    # Validate inputs and exit if any input is invalid
     data_dir, work_dir, model_dir, elim_per, max_pcscale, sss_test, cap_sel, grow_sel, bsize, img_size, pc_size = main_utils.validate_inputs(args.datadir, args.workdir, args.modeldir, args.elimper, args.maxpcscale, args.ssstest, args.capsel, args.growsel, args.batchsize, args.numpoints)
+    # Check if any FWF data is available and adjust software
     fwf_av = main_utils.are_fwf_pointclouds_available(data_dir)
 
+    # If MMTSCNet is in training mode...
     if args.prediction == False:
         logging.info("=== MMTSCNET TRAINING MODE ===")
         try:
@@ -45,6 +51,7 @@ def run_mmtscnet():
             time.sleep(3)
             sys.exit(1)
     
+    # If MMTSCNet is in prediction mode
     else:
         logging.info("=== MMTSCNET PREDICTION MODE ===")
         try:
