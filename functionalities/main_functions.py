@@ -19,6 +19,9 @@ def extract_data(data_dir, work_dir, fwf_av, capsel, growsel):
     fwf_av: True/False - Presence of FWF data.
     capsel: User-specified acquisition selection.
     growsel: User-specified leaf-confition selection.
+
+    Return:
+    full_pathlist: List of all paths available to MMTSCNet.
     """
     local_pathlist = workspace_setup.create_working_directory(work_dir, fwf_av)
     workspace_setup.unzip_all_datasets(data_dir, local_pathlist, fwf_av)
