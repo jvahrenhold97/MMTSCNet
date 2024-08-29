@@ -2010,7 +2010,11 @@ def generate_prediction_data(capsel, growsel, filtered_pointclouds, resampled_po
     importance_threshold: Threshold for feature importance to retain features.
 
     Returns:
-    X_reduced: Reduced feature set.
+    X_pc: Point clouds.
+    X_metrics: Numerical features.
+    X_img_1: Frontal images.
+    X_img_2: Sideways images.
+    onehot_to_label_dict: Dictionary to translate one-hot encoded labels to textual labels.
     """
     tree_labels = np.array(get_labels_for_trees(filtered_pointclouds))
     label_encoder = LabelEncoder()
