@@ -1,5 +1,5 @@
 # MMTSCNet
-This is the official repository for MMTSCNet (Multimodal Tree Species Classification Network). This network was developed to accurately classify LiDAR point clouds of individual trees by augmenting the existing geometric information from the point cloud with numerical features and bidirectional, color-coded views of the point clouds. This approach ensures as much information as possible is captured and allows for high accuracies when classifying coniferous and broadleaf tree species.
+This is the official repository for MMTSCNet (Multimodal Tree Species Classification Network), as published in Remote Sensing [https://doi.org/10.3390/rs17071304](https://doi.org/10.3390/rs17071304). This network was developed to accurately classify LiDAR point clouds of individual trees by augmenting the existing geometric information from the point cloud with numerical features and bidirectional, color-coded views of the point clouds. This approach ensures as much information as possible is captured and allows for high accuracies when classifying coniferous and broadleaf tree species.
 
 # Datasets and Study Sites
 The model was trained and used to predict on the PANGAEA dataset of multi-source segmented LiDAR tree point clouds by Weiser et al. (2022), available at [https://doi.pangaea.de/10.1594/PANGAEA.942856](https://doi.pangaea.de/10.1594/PANGAEA.942856), with pre-segmented tree point clouds from multiple forest plots near Karlsruhe and Bretten in Germany. For each plot, FWF data was available as a byproduct and can be found here: [https://doi.org/10.1594/PANGAEA.947038](https://doi.org/10.1594/PANGAEA.947038).
@@ -223,4 +223,4 @@ This command is OPTIONAL and enables predicting for custom data if MMTSCNet has 
 MMTSCNet was developed by [Jan Richard Vahrenhold](https://de.linkedin.com/in/jan-richard-vahrenhold-250b93221) for his Master's Thesis in Geodata-Technology (M. Eng.), supervised by Prof. Dr. Melanie Brandmeier and Prof. Dr. Markus Müller. We encourage you to improve upon MMTSCNet. However, please always cite our paper when you do so:
 
 ### Citation
-t.b.d.
+Vahrenhold, J.R.; Brandmeier, M.; Müller, M.S. MMTSCNet: Multimodal Tree Species Classification Network for Classification of Multi-Source, Single-Tree LiDAR Point Clouds. Remote Sens. 2025, 17, 1304. https://doi.org/10.3390/rs17071304
